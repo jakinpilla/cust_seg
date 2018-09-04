@@ -1,0 +1,19 @@
+- custid :: 고객id
+- gross.paid :: 고객별 총 구매액
+- last.purdate :: 마지막 구매일
+- total.prod.count :: 고객별 구매상품 갯수
+- sun.num :: 고객별 일요일 접속 횟수
+- mon.num :: 고객별 월요일 접속 횟수
+- tue.num :: 고객별 화요일 접속 횟수
+- wed.num :: 고객별 수요일 접속 횟수
+- thu.num :: 고객별 목요일 접속 횟수
+- fri.num :: 고객별 금요일 접속 횟수
+- sat.num :: 고객별 토요일 접속 횟수
+- total.acc.num :: 고객별 총 접속횟수
+- sun.ratio :: 고객별 일요일 접속비율
+- mon.ratio :: 고객별 월요일 접속비율
+- tue.ratio :: 고객별 화요일 접속비율
+- wed.ratio :: 고객별 수요일 접속비율
+- thu.ratio :: 고객별 목요일 접속비율
+- fri.ratio :: 고객별 금요일 접속비율
+- sat.ratio :: 고객별 토요일 접속비율
