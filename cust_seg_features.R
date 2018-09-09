@@ -12,7 +12,8 @@ head(tran)
 str(tran)
 
 tran$ymd <- as.Date(tran$ymd)
-colnames(tran)[which(names(tran) == "time")] <- "hour"
+library(tidyverse)
+rename(tran, hour = time) %>% head # colnames(tran)[which(names(tran) == "time")] <- "hour"와 같은 의미
 head(tran)
 tran$hour <- as.numeric(substr(tran$hour, 1, 2))
 head(tran)
