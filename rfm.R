@@ -252,25 +252,86 @@ hist(userRFM$frequency, breaks = 50, xlim=c(1, 5))
 
 userRFM %>%
   filter(frequency > 1) -> freq_2_more
-dim(freq_2_more) # 2번 이상 방문한 고객은 31,998명 :: 전체의 27.1%
+dim(freq_2_more) # 2번 이상 방문한 고객은 31,998명 :: 전체의 18.4%
+dim(userRFM)
 
-(31998 / 118058) * 100
+(31998 / 174301) * 100
 
 userRFM %>%
   filter(frequency > 2) -> freq_3_more
-dim(freq_3_more) # 3번 이상 방문한 고객은 3,080명 :: 전체의 6.5%
+dim(freq_3_more) # 3번 이상 방문한 고객은 3,080명 :: 전체의 4.4%
 
-(7728 / 118058) * 100
+(7728 / 174301) * 100
 
 userRFM %>%
   filter(frequency > 3) -> freq_4_more
-dim(freq_4_more) # 4번 이상 방문한 고객은 2,809명 :: 전체의 2.4%
+dim(freq_4_more) # 4번 이상 방문한 고객은 2,809명 :: 전체의 1.6%
 
-(2809 / 118058) * 100
+(2809 / 174301) * 100
+
+userRFM %>%
+  filter(frequency > 9) -> freq_10_more
+dim(freq_10_more) # 10번 이상 방문한 고객은 161명 :: 전체의 0.1%
+
+(161 / 174301) * 100
 
 
-# 4~6월간 대부분의 고객들은 매장을 한 번 방문하였고 2번 이상은 27.1%, 3번 이상은 6.5%, 4번 이상은 2.4%
+# 4~6월간 대부분의 고객들은 매장을 한 번 방문하였고 2번 이상은 18.4%, 3번 이상은 4.4%, 4번 이상은 1.6%
 # 의 비율을 차지함 / 자주 매장에 오는 고객이 매우 드문것이 문제인 듯..
+
+#####################################################################################
+# RFM 별로 상위 20%가 차지하는 총 매출액 비중 구하기
+#####################################################################################
+
+sum_total <- sum(userRFM$monetary)
+sum_total
+
+##############   Recency 기준, 상위 20%가 차지하는 매출액 비중 구하기   ##############
+# recency의 분위수를 (.2, .4, .6, .8)로 할당
+# 날짜 정보를 numeric으로 변환하여 할당
+
+class(userRFM$recency) # date 확인
+head(userRFM$recency)
+as.numeric(head(userRFM$recency)) # 이는 1970-01-01을 기준으로 몇 일이 지났는지를 알려주는 정보
+17666/365 ## 48.4 --> 1970 + 48.4
+
+quantile(as.numeric(userRFM$recency), c(.2, .4, .6, .8))
+
+userRFM$recency <- as.numeric(userRFM$recency)
+head(userRFM)
+
+userRFM %>%
+  filter(recency > quantile(recency, .8)) -> top20_recency
+
+dim(top20_recency)
+
+# recency 
+sumR <- sum(top20_recency$monetary)
+sumR # 2,429,102,822
+
+# recency 상위 20%의 비중 구하기
+sumR / sum_total 
+# 0.25 비중 차지, 보통 일반적인 거래 데이터보다는 현저히 낮은 수준
+# 매장을 2번 이상 방문하는 고객이 매우 적은 것이 원인
+
+##############   Frequency 기준, 상위 20%가 차지하는 매출액 비중 구하기   ##############
+head(userRFM$frequency)
+class(userRFM$frequency)
+
+quantile(as.numeric(userRFM$frequency), c(.2, .4, .6, .8))
+
+# 20% 40% 60% 80% 
+#   1   1   1   1 
+
+
+
+
+
+
+
+
+
+
 
 
 
