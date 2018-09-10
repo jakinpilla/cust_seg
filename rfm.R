@@ -114,10 +114,29 @@ cust_mon_05$grade[cust_mon_05$grade == '웹멤버'] <- 'webmember'
 unique(cust_mon_05$grade)
 head(cust_mon_05)
 
+# June data loading
+cust_mon_06 <- read_excel("data/cust_mon_201806.xlsx")
+head(cust_mon_06)
+dim(cust_mon_06) # 217,717건의 거래내용 확인
+colnames(cust_mon_06) <- c('date', 'custid', 'grade', 'prod_code', 'qty', 'amt')
+head(cust_mon_06)
+
+# cust_mon_06$grade 컬럼의 내용을 영문으로 변경
+unique(cust_mon_06$grade)
+
+cust_mon_06$grade[cust_mon_06$grade == '바디러브'] <- 'bodylove'
+cust_mon_06$grade[cust_mon_06$grade == '클럽'] <- 'club'
+cust_mon_06$grade[cust_mon_06$grade == '골드'] <- 'gold'
+cust_mon_06$grade[cust_mon_06$grade == '웹멤버'] <- 'webmember'
+
+unique(cust_mon_06$grade)
+head(cust_mon_06)
+
 # rbinding data
-cust_mon_total <- rbind(cust_mon_04, cust_mon_05)
-head(cust_mon_total)
-dim(cust_mon_04)[1] + dim(cust_mon_05)[1] == dim(cust_mon_total)[1] # True 확인
+cust_mon_total <- rbind(cust_mon_04, cust_mon_05, cust_mon_06)
+head(cust_mon_total)\
+dim(cust_mon_total) # 총 568,447건의 거래내용 확인
+dim(cust_mon_04)[1] + dim(cust_mon_05)[1] + dim(cust_mon_06)[1] == dim(cust_mon_total)[1] # True 확인
 str(cust_mon_total)
 
 cust_mon_total$date <- as.character(cust_mon_total$date)
@@ -134,7 +153,7 @@ head(cust_mon_total)
 # select columns needed
 cust_mon_total %>% select(ymd, custid, prod_code, amt) -> sale
 dim(sale) # 4~5월 364,231건의 물품별 거래건수 확인
-length(unique(sale$custid)) # 4~5월 고객의 수 :: 118,058명
+length(unique(sale$custid)) # 4~6월 고객의 수 :: 174,301명
 head(sale)
 
 ## Frequency dimension
@@ -150,7 +169,7 @@ df_F %>%
          custid=substr(ymd_custid, 12, length(ymd_custid))) -> df_F
 
 
-# df_F에서 고객별로 묶어 행의 갯수를 세어 해당 고객의 총 방문회수를 구하여 userF에 저장
+# df_F에서 고객별로 묶어 행의 갯수를 세어 해당 고객의 총 구매횟수를 구하여 userF에 저장
 df_F %>%
   group_by(custid) %>%
   summarise(frequency = n()) -> userF
@@ -171,7 +190,7 @@ sale %>%
             monetary=sum(amt),
             period=as.numeric(max(ymd)-min(ymd))) -> userRFM
 head(userRFM)
-nrow(userRFM) # 4~5월 고객의 수 :: 118,058명
+nrow(userRFM) # 4~5월 고객의 수 :: 174,301명
 
 left_join(userRFM, userF, by='custid') -> userRFM
 head(userRFM)
@@ -215,8 +234,17 @@ userRFM %>%
 # <chr>            <date>     <date>        <dbl>  <dbl>     <int>
 # 2005658405552920 2018-04-01 2018-05-30 4985490.    59.        39
 
-# id가 2005658405552920인 고객은 4~5월간 약 50만원을 소비하고 매장을 39번 방문한 초로얄 고객임.
+# id가 2005658405552920인 고객은 4~6월간 약 500만원을 소비하고 매장을 39번 방문한 초로얄 고객임.
 # 무슨 혜택은 드렸는지 궁금??
+
+range(userRFM$frequency) # 40번까지 방문한 고객이 있네요...뉴규??
+userRFM %>%
+  filter(frequency==40)
+
+# custid           minRecency recency    monetary period frequency
+# <chr>            <date>     <date>        <dbl>  <dbl>     <int>
+# 8007182631788866 2018-04-01 2018-06-27 3149830.    87.        40
+
 
 hist(userRFM$frequency, breaks = 50)
 hist(userRFM$frequency, breaks = 50, xlim=c(1, 10))
@@ -224,25 +252,32 @@ hist(userRFM$frequency, breaks = 50, xlim=c(1, 5))
 
 userRFM %>%
   filter(frequency > 1) -> freq_2_more
-dim(freq_2_more) # 2번 이상 방문한 고객은 16,198명 :: 전체의 13.7%
+dim(freq_2_more) # 2번 이상 방문한 고객은 31,998명 :: 전체의 27.1%
 
-(16198 / 118058) * 100
+(31998 / 118058) * 100
 
 userRFM %>%
   filter(frequency > 2) -> freq_3_more
-dim(freq_3_more) # 3번 이상 방문한 고객은 3,080명 :: 전체의 2.6%
+dim(freq_3_more) # 3번 이상 방문한 고객은 3,080명 :: 전체의 6.5%
 
-(3080 / 118058) * 100
+(7728 / 118058) * 100
 
 userRFM %>%
   filter(frequency > 3) -> freq_4_more
-dim(freq_4_more) # 4번 이상 방문한 고객은 1,043명 :: 전체의 0.9%
+dim(freq_4_more) # 4번 이상 방문한 고객은 2,809명 :: 전체의 2.4%
 
-(1043 / 118058) * 100
+(2809 / 118058) * 100
 
 
-# 4~5월간 대부분의 고객들은 매장을 한 번 방문하였고 2번 이상은 13.7%, 3번 이상은 2.6%, 4번 이상은 .9%
+# 4~6월간 대부분의 고객들은 매장을 한 번 방문하였고 2번 이상은 27.1%, 3번 이상은 6.5%, 4번 이상은 2.4%
 # 의 비율을 차지함 / 자주 매장에 오는 고객이 매우 드문것이 문제인 듯..
+
+
+
+
+
+
+
 
 
 
