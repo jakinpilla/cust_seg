@@ -324,8 +324,7 @@ quantile(as.numeric(userRFM$frequency), c(.2, .4, .6, .8))
 #   1   1   1   1 
 
 
-
-
+## 
 
 
 
