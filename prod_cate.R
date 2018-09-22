@@ -1,6 +1,9 @@
+<<<<<<< HEAD
 setwd("C:/Users/Daniel/cust_seg")
 
 library(tidyverse)
+=======
+>>>>>>> 1cf58279607fb27213b4f8a4656531cf4bb02478
 library(readxl)
 prod_cate_1 <- read_excel("./data/category_table_2016-2018.xlsx", sheet = 1)
 prod_cate_2 <- read_excel("./data/category_table_2016-2018.xlsx", sheet = 2)
@@ -87,6 +90,11 @@ head(cust_mon_total)
 
 cust_mon_total$prod_code <- as.character(cust_mon_total$prod_code)
 
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> 1cf58279607fb27213b4f8a4656531cf4bb02478
 # joining
 head(prod_cate)
 head(cust_mon_total)
@@ -95,6 +103,7 @@ str(prod_cate)
 str(cust_mon_total)
 
 cust_mon_total %>%
+<<<<<<< HEAD
   select(date, custid, prod_code, ) -> cust_total
 head(cust_total)
 head(prod_cate)
@@ -486,6 +495,20 @@ fix(df_prod_type)
 
 
 
+=======
+  select(date, custid, prod_code) -> cust_total
+
+cust_total %>% left_join(prod_cate, by='prod_code') -> sdf
+View(prod_cate)
+
+str(non_prod_code_df)
+
+length(unique(non_prod_code_df$prod_code))
+
+missing_prod_code <- data.frame(missing_prod_code = unique(non_prod_code_df$prod_code))
+# View(missing_prod_code)
+write.csv(missing_prod_code, './data/missing_prod_code.csv')
+>>>>>>> 1cf58279607fb27213b4f8a4656531cf4bb02478
 
 
 
