@@ -199,9 +199,60 @@ cust_mon_total <- read.csv('./data/cust_mon_total_01_06.csv',  stringsAsFactors 
 glimpse(cust_mon_total)
 
 cust_mon_total %>%
-  filter(date >= 20180101 & date <= 20180331) -> con_mon_01_03
-head(con_mon_01_03)
+  filter(date >= 20180101 & date <= 20180131) -> con_mon_01
+head(con_mon_01)
+tail(con_mon_01)
+nrow(con_mon_01)
+write.csv(con_mon_01, './data/con_mon_01.csv')
 
+cust_mon_total %>%
+  filter(date >= 20180201 & date <= 20180228) -> con_mon_02
+head(con_mon_02)
+tail(con_mon_02)
+nrow(con_mon_02)
+write.csv(con_mon_02, './data/con_mon_02.csv')
+
+cust_mon_total %>%
+  filter(date >= 20180301 & date <= 20180331) -> con_mon_03
+head(con_mon_03)
+tail(con_mon_03)
+nrow(con_mon_03)
+write.csv(con_mon_03, './data/con_mon_03.csv')
+
+cust_mon_total %>%
+  filter(date >= 20180401 & date <= 20180430) -> con_mon_04
+head(con_mon_04)
+tail(con_mon_04)
+nrow(con_mon_04)
+write.csv(con_mon_04, './data/con_mon_04.csv')
+
+cust_mon_total %>%
+  filter(date >= 20180501 & date <= 20180531) -> con_mon_05
+head(con_mon_05)
+tail(con_mon_05)
+nrow(con_mon_05)
+write.csv(con_mon_05, './data/con_mon_05.csv')
+
+cust_mon_total %>%
+  filter(date >= 20180601 & date <= 20180630) -> con_mon_06
+head(con_mon_06)
+tail(con_mon_06)
+nrow(con_mon_06)
+write.csv(con_mon_06, './data/con_mon_06.csv')
+
+nrow(cust_mon_total) == nrow(con_mon_01) + nrow(con_mon_02) + nrow(con_mon_03) + nrow(con_mon_04) +
+  nrow(con_mon_05) + nrow(con_mon_06)
+
+cust_mon_01 <- read.csv('./data/con_mon_01.csv')
+cust_mon_02 <- read.csv('./data/con_mon_02.csv')
+cust_mon_03 <- read.csv('./data/con_mon_03.csv')
+cust_mon_04 <- read.csv('./data/con_mon_04.csv')
+cust_mon_05 <- read.csv('./data/con_mon_05.csv')
+cust_mon_06 <- read.csv('./data/con_mon_06.csv')
+
+## 정합성 확인
+nrow(cust_mon_total) == nrow(con_mon_01) + nrow(con_mon_02) + nrow(con_mon_03) + nrow(con_mon_04) +
+  nrow(con_mon_05) + nrow(con_mon_06) ##  TRUE 확인
 
 ## 고객등급, 성별, 연령대 -> 팩터로 변환 후 각각 비율을 시각화 해보기
 
@@ -686,7 +737,7 @@ hist(userRFM$minDate, breaks=20)
 # 일자(minDate)에 관한 축 X-axis 내 12, 1, 1, 1, 2, 2 등의 숫자 관찰 --> 오류 해결 필요
 # histogram은 단일 변수의 범위를 binning 하여 해당 bin에 해당하는 데이터 수의 분포를 확인하는 것인데
 # date 형식의 데이터가 단일변수로서 histogram으로 표현될 수 있는지 의문
-# We need the method for hist applied to date odject...
+# We need the method for hist applied to date odject...>>
 
 head(userRFM)
 as.POSIXct(userRFM$minDate)[1:5]
