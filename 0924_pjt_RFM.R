@@ -6,30 +6,36 @@ library(tidyverse)
 # file.exists("data/cust_mon_201804.xlsx")
 setwd("C:/Users/Daniel/cust_seg") 
 # 디렉토리를 순환하면서 파일명 가져오기
-temp.file <- list.files(pattern='cust_mon_.*\\.csv$', recursive = TRUE) 
+temp_file <- list.files(pattern='cust_mon_age_.*\\.xlsx$', recursive = TRUE) 
 # 파일명 리스트 확인
-temp.file 
+temp_file 
 # 모두 한번에 불러오기
-df.list <- lapply(temp.file, read.csv) # lapply를 이용해서 엑셀 읽기
-df.list[[1]]
+df_list <- lapply(temp_file, read_excel) # lapply를 이용해서 엑셀 읽기
+df_list[[1]]
 
-cust_mon_total <- ldply(df.list, data.frame)
+cust_mon_total <- ldply(df_list, data.frame)
 head(cust_mon_total)
-# colnames(df.list.ldply) <- c('date', 'custid', 'grade', 'prod_code', 'qty', 'amt', 
-#                              'prod_dep', 'prod_div', 'prod_name', 'sex', 'age')
-cust_mon_total %>%
-  select(-X.1, -X) -> cust_mon_total
+colnames(cust_mon_total) <- c('date', 'custid', 'grade', 'prod_code', 
+                              'on_off', 'qty', 'amt', 'sex', 'age')
+
 cust_mon_total %>% head
-glimpse(cust_mon_total)
+glimpse(cust_mon_total) # 총 6,605,815건
 
 
 ## 고객등급, 성별, 연령대 -> 팩터로 변환 후 각각 비율을 시각화 해보기
 
 # 회원 등급을 팩터화
-cust_mon_total$grade <- factor(cust_mon_total$grade, levels = c('webmember','love', 'club', 'gold'))
+unique(cust_mon_total$grade)
+cust_mon_total$grade[cust_mon_total$grade == '클럽'] <- 'club'
+cust_mon_total$grade[cust_mon_total$grade == '바디러브'] <- 'love'
+cust_mon_total$grade[cust_mon_total$grade == '골드'] <- 'gold'
+unique(cust_mon_total$grade)
+cust_mon_total$grade <- factor(cust_mon_total$grade, levels = c('love', 'club', 'gold'))
 table(cust_mon_total$grade)
-# webmember      love      club      gold 
-# 23            856264    147078     82546 
+
+# love    club    gold 
+# 5027254 1151429  427132 
+
 
 ## 회원등급에 대한 bar chart
 grade <- names(table(cust_mon_total$grade)); grade
