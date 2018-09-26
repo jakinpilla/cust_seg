@@ -306,18 +306,33 @@ cust_mon_total_with_prod$func_cate[is.na(cust_mon_total_with_prod$func_cate) == 
 
 dim(cust_mon_total_with_prod) # 2년 6개월간 6,084,948건의 물품별 거래
 length(unique(cust_mon_total$custid)) # 2년 6개월간 고객의 수 : 1,353,357명
-length(unique(cust_mon_total$dep)) # 대분류 : 33개
-length(unique(cust_mon_total$prod_div)) # 중분류 : 39개
-length(unique(cust_mon_total$prod_name) )# 상품명 : 1012개
+length(unique(cust_mon_total_with_prod$dep)) # dep : 37개
+length(unique(cust_mon_total_with_prod$div)) # 중분류 : 39개
+length(unique(cust_mon_total_with_prod$prod_nm))# 상품명 : 2,121개
 
 glimpse(cust_mon_total)
-## date, custid, grade, prod_code
-## qty, amt, prod_dep, prod_div, prod_name
-## sex, ageweekday, price
+# Observations: 6,084,948
+# Variables: 15
+# $ date      <chr> "20160101", "20160101", "20160101", "20160101", "20160101", "2...
+# $ custid    <chr> "60000215450", "60000215450", "60000315908", "60000613827", "6...
+# $ grade     <fct> club, club, club, club, club, club, club, club, club, club, cl...
+# $ prod_code <chr> "94266", "891017", "95017", "98061", "24728", "25278", "85081"...
+# $ on_off    <chr> "off", "off", "off", "off", "off", "off", "off", "off", "off",...
+# $ qty       <dbl> 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,...
+# $ amt       <dbl> 39000, 1500, 28000, 15500, 24600, 36000, 8000, 700, 44000, 400...
+# $ sex       <fct> 여, 여, 여, 여, 여, 여, 여, 여, 여, 여, 여, 여, 여, 여, 여, 여, 여, 여, 여, 여, 여,...
+# $ age       <fct> 30, 30, 50, 30, 30, 30, 20, 20, 30, 30, 40, 30, 30, 30, 40, 30...
+# $ year      <chr> "2016", "2016", "2016", "2016", "2016", "2016", "2016", "2016"...
+# $ mon       <chr> "01", "01", "01", "01", "01", "01", "01", "01", "01", "01", "0...
+# $ day       <chr> "01", "01", "01", "01", "01", "01", "01", "01", "01", "01", "0...
+# $ ymd       <date> 2016-01-01, 2016-01-01, 2016-01-01, 2016-01-01, 2016-01-01, 2...
+# $ weekday   <fct> fri, fri, fri, fri, fri, fri, fri, fri, fri, fri, fri, fri, fr...
+# $ price     <dbl> 39000, 1500, 28000, 15500, 24600, 36000, 8000, 700, 44000, 400...
 
 
 #########
 ### 기본 EDA--------------
+head(cust_mon_total)
 
 #1. 매출을 기준으로 가장 소비를 많이하는 고객Id는? #############################################
 salesCust <- aggregate(cust_mon_total$amt, 
@@ -337,23 +352,39 @@ cust_mon_total %>%
   summarise(sum_custamt = sum(amt)) %>%
   arrange(desc(sum_custamt))
 
+# # A tibble: 1,353,357 x 2
+# custid            sum_custamt
+# <chr>                   <dbl>
+# 1 60000026003       1667409095.
+# 2 68007090723242719   98849930.
+# 3 66003010061         98145040.
+# 4 62005658405170841   54137370.
+# 5 68007020521039379   48872130.
+# 6 66004011290         33883210.
+# 7 62005658405250024   32030750.
+# 8 68007212732887522   30304800.
+# 9 62005658404494814   25691360.
+# 10 60001241315         24482770.
+# # ... with 1,353,347 more rows
+
 #################################################################################################
 
 # 구매 갯수 범위
-range(cust_mon_total$qty)  # 1 ~ 400
+range(cust_mon_total$qty)  # 1 ~ 1900
 
 # 구매액 범위
-range(cust_mon_total$amt)  # 3 ~ 6200000
+range(cust_mon_total$amt)  # 3 ~ 29,232,000
 
 # 단가 범위
-range(cust_mon_total$price)  # 3 ~ 5229000
+range(cust_mon_total$price)# 3 ~ 108,200
 
 
 #2. 가장 매출이 많은 제품 대분류는? #############################################################
 glimpse(cust_mon_total)
+glimpse(cust_mon_total_with_prod)
 
-salesProd_dep <- aggregate(cust_mon_total$amt, 
-                           by=list(prod_dep=cust_mon_total$prod_dep), FUN=sum)
+salesProd_dep <- aggregate(cust_mon_total_with_prod$amt, 
+                           by=list(prod_dep=cust_mon_total_with_prod$dep), FUN=sum)
 head(salesProd_dep)
 
 
