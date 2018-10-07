@@ -1,0 +1,25 @@
+---
+title: "pjt_rfm_total_file_comment"
+author: "Daniel_Kim"
+date: "2018년 10월 8일"
+output: rmarkdown::github_document
+---
+
+```{r setup, include=FALSE}
+library(readxl)
+library(plyr)
+library(tidyverse)
+```
+
+## 데이터 수집/처리
+
+- Raw 데이터는 엑셀('.xlsx') 파일들이며 'cust_mon_age_cate' 문자로 시작한다.
+- 이러한 원본 데이터를 자동으로 loading하기 위해 작업 디렉토리 내 동일 문자열을 순환하면서 찾아 파일명을 다음과 같은 코드로 가져올 수 있다.
+
+```{r cars}
+# 디렉토리를 순환하면서 파일명 가져오기
+temp_file <- list.files(pattern='cust_mon_age_cate.*\\.xlsx$', recursive = TRUE) 
+temp_file # 파일명 리스트 확인
+```
+
+
