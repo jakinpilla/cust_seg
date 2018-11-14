@@ -1,0 +1,91 @@
+---
+title: "pjt_rfm_total_file_comment_1(Datapreprocessing)"
+author: "TEAM_1"
+date: "2018년 10월 8일"
+output: rmarkdown::github_document
+---
+
+```{r}
+library(readxl)
+library(plyr)
+library(tidyverse)
+library(data.table)
+```
+
+## 데이터 수집/처리
+
+- Raw 데이터는 엑셀('.xlsx') 파일들이며 'cust_mon_age_cate' 문자로 시작한다.
+- 이러한 원본 데이터를 자동으로 loading하기 위해 작업 디렉토리 내 동일 문자열을 순환하면서 찾아 파일명을 다음과 같은 코드로 가져올 수 있다.
+
+```{r, warning=FALSE}
+# 디렉토리를 순환하면서 파일명 가져오기
+temp_file <- list.files(pattern='cust_mon_age_cate.*\\.xlsx$', recursive = TRUE) 
+temp_file # 파일명 리스트 확인
+```
+
+- lapply를 이용하여 위의 리스트 파일들을 한 번에 읽어온다.
+```{r, warning=FALSE}
+df_list <- lapply(temp_file, read_excel)
+```
+
+- 총 30개의 파일이 읽혀져서 각각 `df_list`변수에 30개의 원소를 가지는 리스트가 형성된다. 이를 rbindlist() 를 이용하여 하나의 변수로 합친다.
+```{r, warning=FALSE}
+df_list_rbindlist <- rbindlist(df_list)
+df_list_rbindlist
+```
+
+ - 변수명의 이름을 다음과 같이 수정한다.
+```{r, warning=FALSE}
+colnames(df_list_rbindlist) <- c('date', 'custid', 'grade', 'prod_code', 
+                                 'on_off', 'qty', 'amt', 'sex', 'age',
+                                 'prod_nm', 'cate', 'cate_ftn', 'cate_line')
+glimpse(df_list_rbindlist)
+```
+- 변수명에 대한 설명은 모두 아는 내용이므로 생략한다. 추후 보안을 위해 custid, grade, prod_nm, cate, cate_ftn, cate_line 등의 변수는 모두 코드화 하여 별도의 테이블로 유지하는 것이 좋을 거라 생각한다.
+ 
+- 위의 수정된 결과를 `cust_prod_total` 이라는 변수명으로 바꾸어 저장한다.
+```{r}
+cust_prod_total <- df_list_rbindlist
+nrow(cust_prod_total)
+```
+
+- 추후 분석과 보안을 위해 등급을 영문명칭으로 치환한다.
+```{r}
+# 고객등급명을 영문으로 변경
+unique(cust_prod_total$grade)
+cust_prod_total$grade[cust_prod_total$grade == '바디러브'] <- 'love'
+cust_prod_total$grade[cust_prod_total$grade == '클럽'] <- 'club'
+cust_prod_total$grade[cust_prod_total$grade == '골드'] <- 'gold'
+```
+
+- 영문으로 전환된 회원등급의 자료형을 `factor`형으로 변환한다.
+```{r}
+### 회원등급, 온/오프라인, 성별, 연령대 -> 팩터로 변환 -> 시각화
+cust_prod_total$grade <- as.factor(cust_prod_total$grade)
+summary(cust_prod_total$grade)
+# 클럽 115만, 골드 42만, 러브 502만 
+```
+
+- `cust_prod_total` 변수는 총 6,605,815 건의 데이터이다. 이는 2016.1월~2018.6월간 A샵의 거래건수이다. 이렇게 처리된 데이터를 향후 쉽게 loading 하기 위해 csv 파일로 저장해 둔다.
+- `.csv`, `.xlsx`, `.Rdata` 등의 데이터 파일은 working directory에 별도의 `data` 폴더를 두어 저장해 두는 것이 관리해 용이하으로 데이터를 저장하는 경로명에는 항상 `./data/~` 경로명을 추가하도록 한다.
+```{r}
+write.csv(cust_prod_total, './data/cust_prod_total.csv')
+```
+
+- 이렇게 저장된 거래 데이터는 `fread()` 함수와 data.table package를 이용해 비교적 빠른 시간에 loading 할 수 있다.
+
+```{r}
+cust_prod_total <- fread('./data/cust_prod_total.csv', data.table = T)
+head(cust_prod_total)
+```
+
+ - 좀 더 적은 저장공간과 빠른 loading을 위해 cust_prod_total 변수를 `.RData` 로 저장하는 방안을 생각할 수 있다. RData로 저장하는 코드는 다음과 같다.
+
+```{r}
+save(cust_prod_total, file='./data/cust_prod_total_raw.RData')
+```
+
+ - 이렿게 저장된 `.RData` 파일은 다음과 같이 작업중인 R Session 내 전역변수로 loading 할 수 있다. 이 때의 변수 명칭은 `cust_prod_total`이다.
+```{r}
+load('./data/cust_prod_total_raw.RData'); head(cust_prod_total)
+```

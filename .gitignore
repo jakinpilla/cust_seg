@@ -1,0 +1,11 @@
+*.xlsx
+
+*.txt
+
+*.csv
+
+*.RData
+
+*.Rhistory
+
+*.zip

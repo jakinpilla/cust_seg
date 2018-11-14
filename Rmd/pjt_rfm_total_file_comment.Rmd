@@ -1,0 +1,97 @@
+---
+title: "pjt_rfm_total_file_comment"
+author: "TEAM_1"
+date: "2018년 10월 8일"
+output: rmarkdown::github_document
+---
+
+```{r}
+library(readxl)
+library(plyr)
+library(tidyverse)
+library(data.table)
+```
+
+## 데이터 수집/처리
+
+- Raw 데이터는 엑셀('.xlsx') 파일들이며 'cust_mon_age_cate' 문자로 시작한다.
+- 이러한 원본 데이터를 자동으로 loading하기 위해 작업 디렉토리 내 동일 문자열을 순환하면서 찾아 파일명을 다음과 같은 코드로 가져올 수 있다.
+
+```{r, warning=FALSE}
+# 디렉토리를 순환하면서 파일명 가져오기
+temp_file <- list.files(pattern='cust_mon_age_cate.*\\.xlsx$', recursive = TRUE) 
+temp_file # 파일명 리스트 확인
+```
+
+- lapply를 이용하여 위의 리스트 파일들을 한 번에 읽어온다.
+```{r, warning=FALSE}
+df_list <- lapply(temp_file, read_excel)
+```
+
+- 총 30개의 파일이 읽혀져서 각각 `df_list`변수에 30개의 원소를 가지는 리스트가 형성된다. 이를 rbindlist() 를 이용하여 하나의 변수로 합친다.
+```{r, warning=FALSE}
+df_list_rbindlist <- rbindlist(df_list)
+df_list_rbindlist
+```
+
+ - 변수명의 이름을 다음과 같이 수정한다.
+```{r, warning=FALSE}
+colnames(df_list_rbindlist) <- c('date', 'custid', 'grade', 'prod_code', 
+                                 'on_off', 'qty', 'amt', 'sex', 'age',
+                                 'prod_nm', 'cate', 'cate_ftn', 'cate_line')
+glimpse(df_list_rbindlist)
+```
+
+- 위의 수정된 결과를 `cust_prod_total` 이라는 변수명으로 바꾸어 저장한다.
+```{r}
+cust_prod_total <- df_list_rbindlist
+nrow(cust_prod_total)
+```
+
+- `cust_prod_total` 변수는 총 6,605,815 건의 데이터이다. 이는 2016.1월~2018.6월간 A샵의 거래건수이다. 이렇게 처리된 데이터를 향후 쉽게 loading 하기 위해 csv 파일로 저장해 둔다.
+```{r}
+write.csv(cust_prod_total, './data/cust_prod_total.csv')
+```
+
+```{r}
+# 고객등급명을 영문으로 변경
+unique(cust_prod_total$grade)
+cust_prod_total$grade[cust_prod_total$grade == '바디러브'] <- 'love'
+cust_prod_total$grade[cust_prod_total$grade == '클럽'] <- 'club'
+cust_prod_total$grade[cust_prod_total$grade == '골드'] <- 'gold'
+```
+
+
+```{r}
+### 회원등급, 온/오프라인, 성별, 연령대 -> 팩터로 변환 -> 시각화
+cust_prod_total$grade <- as.factor(cust_prod_total$grade)
+summary(cust_prod_total$grade)
+# 클럽 115만, 골드 42만, 러브 502만 
+```
+
+```{r}
+cust_prod_total <- cust_prod_total[, -1]
+glimpse(cust_prod_total)
+```
+
+
+```{r}
+write.csv(cust_prod_total, './data/cust_prod_total.csv')
+cust_prod_total <- fread('./data/cust_prod_total.csv', data.table = T)
+head(cust_prod_total)
+```
+
+```{r}
+grade <- names(table(cust_prod_total$grade))
+grade_num <- as.numeric(unname(table(cust_prod_total$grade)))
+grade_df <- data.frame(grades = grade, number = grade_num)
+
+ggplot(grade_df, aes(x=grades, y=number)) + 
+  geom_bar(stat='identity', fill="steelblue") +
+  scale_x_discrete(limits=names(table(cust_prod_total$grade))) +
+  theme_minimal() # -> save as 'grade_num_bar_chart_code_89.PNG'
+```
+
+```{r}
+
+```
