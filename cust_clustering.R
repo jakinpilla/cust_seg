@@ -1,4 +1,4 @@
-setwd("C:/Users/Daniel/rfm")
+setwd("C:/Users/Daniel/cust_seg")
 getwd()
 
 rm(list=ls()); gc()
@@ -367,5 +367,261 @@ data.frame(minus_count = df_fin_minus) -> df_minus
 df_minus %>% head
 df_minus
 
+##--
+df_1 <- read.csv('./data/cust540013_variance_by_lags.csv')
+head(df_1)
+tail(df_1)
+dim(df_1)
 
+df_2 <- read.csv('./data/cust540013_951206_variance_by_lags.csv')
+head(df_2)
+tail(df_2)
+
+df_3 <- read.csv('./data/cust951207_1344345_variance_by_lags.csv')
+head(df_3)
+tail(df_3)
+
+df <- rbind(df_1, df_2, df_3)
+head(df)
+tail(df)
+dim(df)
+
+
+df %>% rename(custid = X) %>% as.tibble() -> df
+df
+
+head(df)
+write.csv(df, './data/lags.csv')
+df <- as.data.frame(df)
+head(df)
+
+# 고객별 등급이 증가한 횟수
+
+df[, -1] %>% 
+  apply(.,1,function(x) sum(x > 0)) -> g_plus_vector
+
+
+# 고객별 등급이 감소한 횟수
+df[, -1] %>% 
+  apply(.,1,function(x) sum(x < 0)) -> g_minus_vector
+
+
+tracing %>% left_join(df, by='custid') -> tracing_lags
+tracing_lags$up_cnt <- g_plus_vector
+tracing_lags$down_cnt <- g_minus_vector
+tracing_lags %>% head %>% as.data.frame()
+
+range(tracing_lags$up_cnt)
+tracing_lags %>%
+  filter(up_cnt == 5) %>% as.data.frame()
+
+range(tracing_lags$down_cnt) 
+
+tracing_lags %>%
+  filter(down_cnt == 5) %>% as.data.frame()
+
+# 고객 등급 변화의 평균----
+lags <- read.csv('./data/lags.csv')
+lags %>% select(-X) -> lags; head(lags)
+
+lags[, -1] %>%
+  apply(., 1, function(x) mean(x)) -> lags_mean_vector
+
+tracing_lags$lags_mean <- lags_mean_vector
+head(tracing_lags, 30) %>% as.data.frame
+
+# 고객 등급 변화의 표준편차 ----
+tmp <- c(1, 2, 3, 4, 5)
+sd(tmp)
+
+lags[, -1] %>%
+  apply(., 1, function(x) sd(x)) -> lags_sd_vector
+
+tracing_lags$lags_sd <- round(lags_sd_vector, 3)
+head(tracing_lags, 30) %>% as.data.frame
+
+# 고객 등급 변화 변동계수----
+tracing_lags %>% 
+  mutate(lags_cov =  lags_sd / lags_mean) -> tracing_lags
+
+tracing_lags %>% head()  %>% as.data.frame()
+
+# 고객 등급의 평균 ----
+str(tracing_lags)
+tracing_lags$`2016-06` <- as.numeric(tracing_lags$`2016-06`)
+tracing_lags$`2016-09` <- as.numeric(tracing_lags$`2016-09`)
+tracing_lags$`2016-12` <- as.numeric(tracing_lags$`2016-12`)
+tracing_lags$`2017-03` <- as.numeric(tracing_lags$`2017-03`)
+tracing_lags$`2017-06` <- as.numeric(tracing_lags$`2017-06`)
+tracing_lags$`2017-09` <- as.numeric(tracing_lags$`2017-09`)
+tracing_lags$`2017-12` <- as.numeric(tracing_lags$`2017-12`)
+tracing_lags$`2018-03` <- as.numeric(tracing_lags$`2018-03`)
+tracing_lags$`2018-06` <- as.numeric(tracing_lags$`2018-06`)
+
+tracing_lags %>% 
+  select(`2016-06` : `2018-06`) %>%
+  rowMeans() -> tracing_g_mean_vector
+
+tracing_lags$g_mean <- round(tracing_g_mean_vector, 3)
+
+tracing_lags %>% head() %>% as.data.frame()
+
+# 고객의 시작 등급 ----
+
+## start_1606
+glimpse(tracing_lags)
+tracing_lags %>%
+  select(custid : `2018-06`) %>%
+  filter(`2016-06` != 0) -> start_1606; head(start_1606)
+dim(start_1606)
+
+start_1606 %>%
+  select(custid, `2016-06`) %>%
+  rename(start_grade = `2016-06`) -> start_1606_g; head(start_1606_g)
+
+## start_1609
+tracing_lags %>%
+  select(custid : `2018-06`) %>%
+  filter(`2016-06` == 0 & `2016-09` != 0) -> start_1609; head(start_1609)
+
+start_1609 %>%
+  select(custid, `2016-09`) %>%
+  rename(start_grade = `2016-09`) -> start_1609_g; head(start_1609_g)
+
+## start_1612
+tracing_lags %>%
+  select(custid : `2018-06`) %>%
+  filter(`2016-06` == 0 & 
+           `2016-09` == 0 &
+           `2016-12` !=0) -> start_1612; head(start_1612)
+
+start_1612 %>%
+  select(custid, `2016-12`) %>%
+  rename(start_grade = `2016-12`) -> start_1612_g; head(start_1612_g)
+
+
+## start_1703
+tracing_lags %>%
+  select(custid : `2018-06`) %>%
+  filter(`2016-06` == 0 & 
+           `2016-09` == 0 &
+           `2016-12` == 0 &
+           `2017-03` != 0) -> start_1703; head(start_1703)
+
+start_1703 %>%
+  select(custid, `2017-03`) %>%
+  rename(start_grade = `2017-03`) -> start_1703_g; head(start_1703_g)
+
+## start_1706
+tracing_lags %>%
+  select(custid : `2018-06`) %>%
+  filter(`2016-06` == 0 & 
+           `2016-09` == 0 &
+           `2016-12` == 0 &
+           `2017-03` == 0 &
+           `2017-06` != 0 ) -> start_1706; head(start_1706)
+
+start_1706 %>%
+  select(custid, `2017-06`) %>%
+  rename(start_grade = `2017-06`) -> start_1706_g; head(start_1706_g)
+
+## start_1709
+tracing_lags %>%
+  select(custid : `2018-06`) %>%
+  filter(`2016-06` == 0 & 
+           `2016-09` == 0 &
+           `2016-12` == 0 &
+           `2017-03` == 0 &
+           `2017-06` == 0 &
+           `2017-09` != 0 ) -> start_1709; head(start_1709)
+
+start_1709 %>%
+  select(custid, `2017-09`) %>%
+  rename(start_grade = `2017-09`) -> start_1709_g; head(start_1709_g)
+
+## start_1712
+tracing_lags %>%
+  select(custid : `2018-06`) %>%
+  filter(`2016-06` == 0 & 
+           `2016-09` == 0 &
+           `2016-12` == 0 &
+           `2017-03` == 0 &
+           `2017-06` == 0 &
+           `2017-09` == 0 &
+           `2017-12` != 0) -> start_1712; head(start_1712)
+
+start_1712 %>%
+  select(custid, `2017-12`) %>%
+  rename(start_grade = `2017-12`) -> start_1712_g; head(start_1712_g)
+
+## start_1803
+tracing_lags %>%
+  select(custid : `2018-06`) %>%
+  filter(`2016-06` == 0 & 
+           `2016-09` == 0 &
+           `2016-12` == 0 &
+           `2017-03` == 0 &
+           `2017-06` == 0 &
+           `2017-09` == 0 &
+           `2017-12` == 0 &
+           `2018-03` != 0 ) -> start_1803; head(start_1803)
+
+start_1803 %>%
+  select(custid, `2018-03`) %>%
+  rename(start_grade = `2018-03`) -> start_1803_g; head(start_1803_g)
+
+## start_1806
+tracing_lags %>%
+  select(custid : `2018-06`) %>%
+  filter(`2016-06` == 0 & 
+           `2016-09` == 0 &
+           `2016-12` == 0 &
+           `2017-03` == 0 &
+           `2017-06` == 0 &
+           `2017-09` == 0 &
+           `2017-12` == 0 &
+           `2018-03` == 0 & 
+           `2018-06` != 0 ) -> start_1806; head(start_1806)
+
+start_1806 %>%
+  select(custid, `2018-06`) %>%
+  rename(start_grade = `2018-06`) -> start_1806_g; head(start_1806_g)
+
+start_1606_g
+start_1609_g
+start_1612_g
+start_1703_g
+start_1706_g
+start_1709_g
+start_1712_g
+start_1803_g
+start_1806_g
+rbind(start_1606_g, start_1609_g, start_1612_g, start_1703_g, 
+      start_1706_g, start_1709_g, start_1712_g, start_1803_g, start_1806_g) %>%
+  arrange(custid) -> start_g
+
+tracing_lags %>% 
+  left_join(start_g, by='custid') -> tracing_lags; head(tracing_lags)
+
+tracing_lags %>% head %>% as.data.frame()
+
+
+
+
+
+
+
+
+# 고객의 마지막 등급(현재 등급) ----
+tracing_lags %>%
+  mutate(end_grade = `2018-06`) -> tracing_lags ; head(tracing_lags)
+
+tracing_lags %>% head %>% as.data.frame()
+
+
+# E 등급의 횟수
+tracing_lags[1:10, ] %>% 
+  select(`2016-06` : `2018-06`) %>%
+  rowwise() %>%
+  mutate(e_cnt = sum(.==1)) %>% as.data.frame()
 
