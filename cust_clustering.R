@@ -392,6 +392,7 @@ head(tracing_lags) %>% as.data.frame()
 save(tracing_lags, file = './data/tracing_lags.RData')
 
 load('./data/tracing_lags.RData')
+head(tracing_lags)
 tracing_lags %>% 
   select(custid, up_cnt, down_cnt, lags_mean, lags_sd, g_mean, start_grade, end_grade) -> cluster_data
 
