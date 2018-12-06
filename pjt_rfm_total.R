@@ -1,6 +1,6 @@
 ######### 코드 결과물 RData 
 
-setwd("C:/Users/Daniel/rfm")
+setwd("C:/Users/Daniel/cust_seg")
 getwd()
 
 rm(list=ls()); gc()
@@ -574,7 +574,7 @@ userRFM %>%
 
 userRFM %>%
   select(-custid) %>%
-  select(custid_no, minRecency:period) -> 
+  select(custid_no, minRecency:period) -> userRFM
 
 ## 성별, 연령, 상품코드 분석은 RFM 분석 이후 진행 예정
 
@@ -839,7 +839,7 @@ quantM[5] # M 분위수가 0.8이 되는 액수는 "103,000" 원
 ## RFM별 상위 20%가 차지하는 총 매출액 대비 비중
 
 # recency 상위 
-View(head(userRFM, 10))
+# View(head(userRFM, 10))
 userRFM$monetary
 head(userRFM, 10)
 
@@ -996,7 +996,7 @@ summary(userRFM$minDate)
 summary(userRFM$maxDate)
 summary(userRFM$score)
 
-save(userRFM_uniq, file="userRFM_full_uniq.RData")
+save(userRFM, file="userRFM.RData")
 
 #### custid 수정 ->> 최종 고객 마스터 생성
 
@@ -1006,10 +1006,10 @@ save(userRFM_uniq, file="userRFM_full_uniq.RData")
 # 
 # https://stackoverflow.com/questions/11996135/create-a-sequential-number-counter-for-rows-within-each-group-of-a-dataframe
 # https://stackoverflow.com/questions/14409084/pad-with-leading-zeros-to-common-width
-userRFM_uniq <- userRFM %>%
-  dplyr::mutate(custid = sprintf("C%08d", row_number()))
-userRFM_uniq  
-glimpse(userRFM_uniq)
+# userRFM_uniq <- userRFM %>%
+#   dplyr::mutate(custid = sprintf("C%08d", row_number()))
+# userRFM_uniq  
+# glimpse(userRFM_uniq)
 
 
 ## 후속 작업용 파일 생성 
@@ -1024,8 +1024,8 @@ glimpse(userRFM_uniq)
 
 
 #2) RData (->> userRFM_uniq로 작업 진행)
-save(userRFM_uniq, file="userRFM_full_uniq.RData")
-rm(userRFM_uniq)
+# save(userRFM_uniq, file="userRFM_full_uniq.RData")
+# rm(userRFM_uniq)
 # load("userRFM_full_uniq.RData")
 
 # glimpse(userRFM_uniq)
