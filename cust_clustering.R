@@ -12,7 +12,7 @@ load('cust_grade_term_monthly.RData')
 
 tracing_raw <- cust_grade_term_monthly
 tracing_raw[1:10, 1:10]
-colnames(tracing)
+colnames(tracing_raw)
 tracing_nm <- c("custid", "g_1606", "g_1607", "g_1608", "g_1609", "g_1610", "g_1611", "g_1612",
                 "g_1701", "g_1702", "g_1703", "g_1704", "g_1705", "g_1706", "g_1707", "g_1708",
                 "g_1709", "g_1710", "g_1711", "g_1712", "g_1801", "g_1802", "g_1803", "g_1804",
@@ -74,20 +74,11 @@ tracing$lag_24 <- tracing$g_1806 - tracing$g_1805; head(tracing, 10)
 # 고객의 등급의 평균
 # 고객의 시작 등급
 # 고객의 마지막 등급
-
 # 고객 등급 변화의 평균
 # 고객 등급 변화의 표준편차
 # 고객 등급의 변동계수(표준편차 / 평균)
 # 연속적인 E 등급의 갯수
 
-# 고객 특성 파악하여 한 장에 정리하기
-# 이벤트때 와서 이탈한 고객 수 확인 : %, 몇명, 누구, 얼마...
-#  - 다음 이벤트때 온 사람과 안 온 사람
-#  - 다다음 이벤트때 온 사람과 안 온 사람
-# 이벤트때 와서 regular 고객으로 된 고객 수 : %, 몇명, 누구, 얼마...
-# regular 고객이 이탈한 경우의 고객 수 : % (긴급대응하기) 
-# business like 한 해석이 중요 - 고객분류를 해내야 함.
-# ROI 제시할 수 있어야 함 / 업적이 되어야 함.
 
 ##----
 # upcnt 변수 : customer의 grade가 올라간 횟수
@@ -497,8 +488,6 @@ load('userRFM.RData')
 head(tracing)
 tracing$freq <- userRFM$frequency
 tracing$F_score <- userRFM$F
-
-tracing$freq == tracing$F
 colnames(tracing)
 
 # 표본추출(그래프를 그리기 위해)
@@ -519,9 +508,7 @@ tracing_sample[, -1] %>% class
 t(tracing_sample[, -1])[1:10, 1:10]
 
 tracing_sample_T <- t(tracing_sample[, -1])
-head(tracing_sample_T)
 dim(tracing_sample_T)
-as.data.frame(tracing_sample_T)[1:9, 1:sample_n]
 as.data.frame(tracing_sample_T)[1:25, 1:10]
 
 
@@ -535,7 +522,7 @@ glimpse(plot_sample_df)
 # 5명에 대한 점수변화 시각화----
 
 df <- plot_sample_df[, 1:5]
-df <- cbind(months = rownames(df), df); head(df, 25)
+df <- cbind(months = rownames(df), df); head(df)
 rownames(df) <- NULL
 df$months <- as.character(df$months)
 str(df$months)
@@ -557,7 +544,7 @@ str(df$months)
 dim(df)
 
 library(reshape2)
-dfm = melt(df, id.vars='months'); dfm
+dfm = melt(df, id.vars='months');
 
 ggplot(dfm, aes(x=months, y=value, group=variable)) +
   theme_bw() +
@@ -583,10 +570,10 @@ colnames(tracing_T) <- a_custid ; tracing_T
 df <- tracing_T
 df <- data.frame(months = rownames(df), C00000004 = df$C00000004); df
 rownames(df) <- NULL
-df
+head(df)
 
 library(reshape2)
-dfm = melt(df, id.vars='months'); dfm
+dfm = melt(df, id.vars='months')
 
 ggplot(dfm, aes(x=months, y=as.numeric(value), colour=variable)) + 
   geom_line(aes(color = variable, group = variable, linetype = variable), size=1) + 
@@ -595,8 +582,8 @@ ggplot(dfm, aes(x=months, y=as.numeric(value), colour=variable)) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 # K-평균 군집 해보자---
-save(tracing, file = './data/tracing.RData')
-load('./data/tracing.RData')
+# save(tracing, file = './data/tracing.RData')
+# load('./data/tracing.RData')
 head(tracing)
 
 tracing %>% 
@@ -650,14 +637,14 @@ colnames(tracing_T) <- sample_custid
 tracing_T
 df <- tracing_T
 
-df <- cbind(months = rownames(df), df); head(df, 25)
+df <- cbind(months = rownames(df), df); head(df)
 rownames(df) <- NULL
 df$months <- as.character(df$months)
 str(df$months)
 dim(df)
 
 library(reshape2)
-dfm = melt(df, id.vars='months'); dfm
+dfm = melt(df, id.vars='months')
 
 ggplot(dfm, aes(x=months, y=value, colour=variable)) + 
   geom_line(aes(color = variable, group = variable, linetype = variable), size=1) +
@@ -684,14 +671,14 @@ colnames(tracing_T) <- sample_custid
 tracing_T
 df <- tracing_T
 
-df <- cbind(months = rownames(df), df); head(df, 25)
+df <- cbind(months = rownames(df), df); head(df)
 rownames(df) <- NULL
 df$months <- as.character(df$months)
 str(df$months)
 dim(df)
 
 library(reshape2)
-dfm = melt(df, id.vars='months'); dfm
+dfm = melt(df, id.vars='months')
 
 ggplot(dfm, aes(x=months, y=value, colour=variable)) + 
   geom_line(aes(color = variable, group = variable, linetype = variable), size=1) +
@@ -717,14 +704,14 @@ colnames(tracing_T) <- sample_custid
 tracing_T
 df <- tracing_T
 
-df <- cbind(months = rownames(df), df); head(df, 25)
+df <- cbind(months = rownames(df), df); head(df)
 rownames(df) <- NULL
 df$months <- as.character(df$months)
 str(df$months)
 dim(df)
 
 library(reshape2)
-dfm = melt(df, id.vars='months'); dfm
+dfm = melt(df, id.vars='months')
 
 ggplot(dfm, aes(x=months, y=value, colour=variable)) + 
   geom_line(aes(color = variable, group = variable, linetype = variable), size=1) +
