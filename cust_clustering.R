@@ -172,6 +172,7 @@ start_1611 %>%
   select(custid, g_1611) %>%
   rename(start_grade = g_1611) -> start_1611_g; head(start_1611_g)
 
+
 ## start_1612----
 tracing %>%
   select(custid : g_1612) %>%
@@ -490,6 +491,16 @@ tracing$freq <- userRFM$frequency
 tracing$F_score <- userRFM$F
 colnames(tracing)
 
+# value == 0 의 횟수
+tracing %>% 
+  select(g_1606 : g_1806) %>%
+  mutate(zero_cnt = rowSums(.==0)) -> tmp; head(tmp) 
+
+zero_cnt_vector <- tmp$zero_cnt
+tracing$zero_cnt <- zero_cnt_vector
+
+head(tracing)
+
 # 표본추출(그래프를 그리기 위해)
 n <- nrow(tracing)
 idx <- 1:n
@@ -504,6 +515,7 @@ head(tracing_sample)
 tracing_sample$custid -> sample_custid; 
 sample_custid[1:10]
 
+
 tracing_sample[, -1] %>% class
 t(tracing_sample[, -1])[1:10, 1:10]
 
@@ -514,7 +526,6 @@ as.data.frame(tracing_sample_T)[1:25, 1:10]
 
 tracing_T <- as.data.frame(tracing_sample_T)[1:25, 1:sample_n]
 colnames(tracing_T) <- sample_custid
-
 
 plot_sample_df <- tracing_T[1:25, 1:1000]; 
 glimpse(plot_sample_df)
@@ -581,13 +592,13 @@ ggplot(dfm, aes(x=months, y=as.numeric(value), colour=variable)) +
   ylab('grades') + 
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
-# K-평균 군집 해보자---
+# K-평균 군집 해보자----
 # save(tracing, file = './data/tracing.RData')
 # load('./data/tracing.RData')
 head(tracing)
 
 tracing %>% 
-  select(custid, upcnt, downcnt, g_mean, start_grade, end_grade, e_cnt, freq) -> cluster_data
+  select(custid, upcnt, downcnt, g_mean, start_grade, end_grade, e_cnt, zero_cnt) -> cluster_data
 
 head(cluster_data)
 glimpse(cluster_data)
@@ -609,15 +620,14 @@ wssplot <- function(data, nc= 15, seed = 1234) {
            xlab= "Number of Clusters",
            ylab= "Within Groups Sum of Squares")}
 
+wssplot(scaled_cluster_data, nc=15)
 
-wssplot(scaled_cluster_data, nc=25)
-
-# n=10으로 선택해보자
+# n=10으로 선택해보자----
 cust_kmeans <- kmeans(scaled_cluster_data, 10)
 tracing$cluster <- cust_kmeans$cluster
 head(tracing) %>% as.data.frame()
 
-# cluster 1번 군집의 패턴을 이해해 보기 위해 10명을 추출해 등급변화를 시각화해보자
+# cluster 1번 군집의 패턴을 이해해 보기 위해 10명을 추출해 등급변화를 시각화해보자----
 n_sample = 10
 
 tracing %>%
@@ -642,16 +652,45 @@ rownames(df) <- NULL
 df$months <- as.character(df$months)
 str(df$months)
 dim(df)
+head(df)
 
 library(reshape2)
-dfm = melt(df, id.vars='months')
+dfm = melt(df, id.vars='months'); head(dfm); str(dfm)
+unique(dfm$variable)
 
-ggplot(dfm, aes(x=months, y=value, colour=variable)) + 
-  geom_line(aes(color = variable, group = variable, linetype = variable), size=1) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+ggplot(dfm, aes(x=months, y=value)) + 
+  geom_line(aes(color = variable, group = variable, linetype = variable), size=.8) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_y_continuous(limits = c(0, 5))
 
+# cluster 1번 집단은 17년 말에서 18넌 초에 방문한 고객으로 고객 등급이 차츰 증가하는 고객집단
+# 잠재적 우수 고객으로 평가
 
-# cluster 2번 군집의 패턴을 이해해 보기 위해 10명을 추출해 등급변화를 시각화해보자
+tracing %>%
+  filter(cluster == 1) -> clus_1; head(clus_1); dim(clus_1) # 145,479 명
+
+clus_1_cust_vector <- clus_1$custid; length(clus_1_cust_vector)
+
+# load('cust_prod_total_fin.RData')
+# head(cust_prod_total_fin) %>% as.data.frame()
+# nrow(cust_prod_total_fin) # 5410838
+
+cust_prod_total_fin %>%
+  select(custid, date, grade, qty, amt, sex, age, prod_nm, cate, cate_ftn, cate_line, price) -> data
+
+as.data.table(data) -> data
+head(data)
+
+data %>%
+  filter(custid %in% clus_1_cust_vector) -> df_tmp ; head(df_tmp)
+nrow(df_tmp)
+df_tmp %>%
+  group_by(custid) %>% 
+  summarise(sum.amt = sum(amt)) -> tmp; head(tmp)
+
+tmp %>% summarise(sum.total.amt = sum(sum.amt)) # 3,376,049,032 원 (33억 8천)
+
+# cluster 2번 군집의 패턴을 이해해 보기 위해 10명을 추출해 등급변화를 시각화해보자----
 n_sample = 10
 
 tracing %>%
@@ -682,9 +721,36 @@ dfm = melt(df, id.vars='months')
 
 ggplot(dfm, aes(x=months, y=value, colour=variable)) + 
   geom_line(aes(color = variable, group = variable, linetype = variable), size=1) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_y_continuous(limits = c(0, 5))
 
-# cluster 3번 군집의 패턴을 이해해 보기 위해 10명을 추출해 등급변화를 시각화해보자
+# cluster 2는 16년 말에서 17년 전반기에 와서 상위 등급을 유지하는 고객
+
+tracing %>%
+  filter(cluster == 2) -> clus_2; head(clus_2); dim(clus_2) # 115,960 명
+
+clus_2_cust_vector <- clus_2$custid; length(clus_2_cust_vector)
+
+# load('cust_prod_total_fin.RData')
+# head(cust_prod_total_fin) %>% as.data.frame()
+# nrow(cust_prod_total_fin) # 5410838
+
+# cust_prod_total_fin %>%
+#   select(custid, date, grade, qty, amt, sex, age, prod_nm, cate, cate_ftn, cate_line, price) -> data
+# 
+# as.data.table(data) -> data
+# head(data)
+
+data %>%
+  filter(custid %in% clus_2_cust_vector) -> df_tmp ; head(df_tmp)
+nrow(df_tmp)
+df_tmp %>%
+  group_by(custid) %>% 
+  summarise(sum.amt = sum(amt)) -> tmp; head(tmp)
+
+tmp %>% summarise(sum.total.amt = sum(sum.amt)) # 13,924,069,474 원 (139억 2천)
+
+# cluster 3번 군집의 패턴을 이해해 보기 위해 10명을 추출해 등급변화를 시각화해보자----
 n_sample = 10
 
 tracing %>%
@@ -710,10 +776,504 @@ df$months <- as.character(df$months)
 str(df$months)
 dim(df)
 
-library(reshape2)
+dfm = melt(df, id.vars='months')
+
+ggplot(dfm, aes(x=months, y=value, colour=variable)) + 
+  geom_line(aes(color = variable, group = variable ,linetype = variable), size=1) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_y_continuous(limits = c(0, 5))
+
+# 예전부터 최근까지 높은 등급을 유지하는 집단
+
+tracing %>%
+  filter(cluster == 3) -> clus_3; head(clus_3); dim(clus_3) # 135,980 명
+
+clus_3_cust_vector <- clus_3$custid; length(clus_3_cust_vector)
+
+# load('cust_prod_total_fin.RData')
+# head(cust_prod_total_fin) %>% as.data.frame()
+# nrow(cust_prod_total_fin) # 5410838
+
+# cust_prod_total_fin %>%
+#   select(custid, date, grade, qty, amt, sex, age, prod_nm, cate, cate_ftn, cate_line, price) -> data
+# 
+# as.data.table(data) -> data
+# head(data)
+
+data %>%
+  filter(custid %in% clus_3_cust_vector) -> df_tmp ; head(df_tmp)
+nrow(df_tmp)
+df_tmp %>%
+  group_by(custid) %>% 
+  summarise(sum.amt = sum(amt)) -> tmp; head(tmp)
+
+tmp %>% summarise(sum.total.amt = sum(sum.amt)) # 33,584,098,859 원 (336억 8천)
+
+# cluster 4번 군집의 패턴을 이해해 보기 위해 10명을 추출해 등급변화를 시각화해보자----
+n_sample = 10
+
+tracing %>%
+  filter(cluster == 4) %>%
+  sample_n(10) -> cluster4.sample10
+
+tracing_sample <- cluster4.sample10; tracing_sample
+sample_custid <- tracing_sample$custid 
+
+tracing_sample_T <- t(tracing_sample[, -1])
+head(tracing_sample_T)
+dim(tracing_sample_T)
+as.data.frame(tracing_sample_T)[1:25, 1:n_sample]
+
+tracing_T <- as.data.frame(tracing_sample_T)[1:25, 1:n_sample]
+colnames(tracing_T) <- sample_custid
+tracing_T
+df <- tracing_T
+
+df <- cbind(months = rownames(df), df); head(df)
+rownames(df) <- NULL
+df$months <- as.character(df$months)
+str(df$months)
+dim(df)
+
 dfm = melt(df, id.vars='months')
 
 ggplot(dfm, aes(x=months, y=value, colour=variable)) + 
   geom_line(aes(color = variable, group = variable, linetype = variable), size=1) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_y_continuous(limits = c(0, 5))
+
+# cluster 4번은 예전부터 이탈상테를 유지하는 고객들
+
+tracing %>%
+  filter(cluster == 4) -> clus_4; head(clus_4); dim(clus_4) # 135,717 명
+
+clus_4_cust_vector <- clus_4$custid; length(clus_4_cust_vector)
+
+# load('cust_prod_total_fin.RData')
+# head(cust_prod_total_fin) %>% as.data.frame()
+# nrow(cust_prod_total_fin) # 5410838
+
+# cust_prod_total_fin %>%
+#   select(custid, date, grade, qty, amt, sex, age, prod_nm, cate, cate_ftn, cate_line, price) -> data
+# 
+# as.data.table(data) -> data
+# head(data)
+
+data %>%
+  filter(custid %in% clus_4_cust_vector) -> df_tmp ; head(df_tmp)
+nrow(df_tmp)
+df_tmp %>%
+  group_by(custid) %>% 
+  summarise(sum.amt = sum(amt)) -> tmp; head(tmp)
+
+tmp %>% summarise(sum.total.amt = sum(sum.amt)) # 2,710,264,495 원 (27억 1천)
+
+
+# cluster 5번 군집의 패턴을 이해해 보기 위해 10명을 추출해 등급변화를 시각화해보자----
+n_sample = 10
+
+tracing %>%
+  filter(cluster == 5) %>%
+  sample_n(10) -> cluster5.sample10
+
+tracing_sample <- cluster5.sample10; tracing_sample
+sample_custid <- tracing_sample$custid 
+
+tracing_sample_T <- t(tracing_sample[, -1])
+head(tracing_sample_T)
+dim(tracing_sample_T)
+as.data.frame(tracing_sample_T)[1:25, 1:n_sample]
+
+tracing_T <- as.data.frame(tracing_sample_T)[1:25, 1:n_sample]
+colnames(tracing_T) <- sample_custid
+tracing_T
+df <- tracing_T
+
+df <- cbind(months = rownames(df), df); head(df)
+rownames(df) <- NULL
+df$months <- as.character(df$months)
+str(df$months)
+dim(df)
+
+dfm = melt(df, id.vars='months')
+
+ggplot(dfm, aes(x=months, y=value, colour=variable)) + 
+  geom_line(aes(color = variable, group = variable, linetype = variable), size=1) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_y_continuous(limits = c(0, 5)) 
+
+# 등급의 변화가 크나 평균이상의 등급은 유지하는 집단
+
+tracing %>%
+  filter(cluster == 5) -> clus_5; head(clus_5); dim(clus_5) # 144,838 명
+
+clus_5_cust_vector <- clus_5$custid; length(clus_5_cust_vector)
+
+# load('cust_prod_total_fin.RData')
+# head(cust_prod_total_fin) %>% as.data.frame()
+# nrow(cust_prod_total_fin) # 5410838
+
+# cust_prod_total_fin %>%
+#   select(custid, date, grade, qty, amt, sex, age, prod_nm, cate, cate_ftn, cate_line, price) -> data
+# 
+# as.data.table(data) -> data
+# head(data)
+
+data %>%
+  filter(custid %in% clus_5_cust_vector) -> df_tmp ; head(df_tmp)
+nrow(df_tmp)
+df_tmp %>%
+  group_by(custid) %>% 
+  summarise(sum.amt = sum(amt)) -> tmp; head(tmp)
+
+tmp %>% summarise(sum.total.amt = sum(sum.amt)) # 9,683,550,105 원 (96억 8천)
+
+
+# cluster 6번 군집의 패턴을 이해해 보기 위해 10명을 추출해 등급변화를 시각화해보자----
+n_sample = 10
+
+tracing %>%
+  filter(cluster == 6) %>%
+  sample_n(10) -> cluster6.sample10
+
+tracing_sample <- cluster6.sample10; tracing_sample
+sample_custid <- tracing_sample$custid 
+
+tracing_sample_T <- t(tracing_sample[, -1])
+head(tracing_sample_T)
+dim(tracing_sample_T)
+
+as.data.frame(tracing_sample_T)[1:25, 1:n_sample]
+
+tracing_T <- as.data.frame(tracing_sample_T)[1:25, 1:n_sample]
+colnames(tracing_T) <- sample_custid
+tracing_T
+df <- tracing_T
+
+df <- cbind(months = rownames(df), df); head(df)
+rownames(df) <- NULL
+df$months <- as.character(df$months)
+str(df$months)
+dim(df)
+
+dfm = melt(df, id.vars='months')
+
+ggplot(dfm, aes(x=months, y=value, colour=variable)) + 
+  geom_line(aes(color = variable, group = variable, linetype = variable), size=1) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_y_continuous(limits = c(0, 5))
+
+# 구매금액이 낮고, 등급이 감소경향이 있어 이탈가능성이 있는 집단
+
+tracing %>%
+  filter(cluster == 6) -> clus_6; head(clus_6); dim(clus_6) # 128,015 명
+
+clus_6_cust_vector <- clus_6$custid; length(clus_6_cust_vector)
+
+# load('cust_prod_total_fin.RData')
+# head(cust_prod_total_fin) %>% as.data.frame()
+# nrow(cust_prod_total_fin) # 5410838
+
+# cust_prod_total_fin %>%
+#   select(custid, date, grade, qty, amt, sex, age, prod_nm, cate, cate_ftn, cate_line, price) -> data
+# 
+# as.data.table(data) -> data
+# head(data)
+
+data %>%
+  filter(custid %in% clus_6_cust_vector) -> df_tmp ; head(df_tmp)
+nrow(df_tmp)
+df_tmp %>%
+  group_by(custid) %>% 
+  summarise(sum.amt = sum(amt)) -> tmp; head(tmp)
+
+tmp %>% summarise(sum.total.amt = sum(sum.amt)) # 3,522,036,668 원 (35억 2천)
+
+# cluster 7번 군집의 패턴을 이해해 보기 위해 10명을 추출해 등급변화를 시각화해보자----
+n_sample = 10
+
+tracing %>%
+  filter(cluster == 7) %>%
+  sample_n(10) -> cluster7.sample10
+
+tracing_sample <- cluster7.sample10; tracing_sample
+sample_custid <- tracing_sample$custid 
+
+tracing_sample_T <- t(tracing_sample[, -1])
+head(tracing_sample_T)
+dim(tracing_sample_T)
+
+as.data.frame(tracing_sample_T)[1:25, 1:n_sample]
+
+tracing_T <- as.data.frame(tracing_sample_T)[1:25, 1:n_sample]
+colnames(tracing_T) <- sample_custid
+tracing_T
+df <- tracing_T
+
+df <- cbind(months = rownames(df), df); head(df)
+rownames(df) <- NULL
+df$months <- as.character(df$months)
+str(df$months)
+dim(df)
+
+dfm = melt(df, id.vars='months')
+
+ggplot(dfm, aes(x=months, y=value, colour=variable)) + 
+  geom_line(aes(color = variable, group = variable, linetype = variable), size=1) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_y_continuous(limits = c(0, 5))
+
+# 예전 고객이었으나, 등급 다소 하향, 그러나 등급 지속 유지, 한 단계 상승 기대
+
+tracing %>%
+  filter(cluster == 7) -> clus_7; head(clus_7); dim(clus_7) # 184,345 명
+
+clus_7_cust_vector <- clus_7$custid; length(clus_7_cust_vector)
+
+# load('cust_prod_total_fin.RData')
+# head(cust_prod_total_fin) %>% as.data.frame()
+# nrow(cust_prod_total_fin) # 5410838
+
+# cust_prod_total_fin %>%
+#   select(custid, date, grade, qty, amt, sex, age, prod_nm, cate, cate_ftn, cate_line, price) -> data
+# 
+# as.data.table(data) -> data
+# head(data)
+
+data %>%
+  filter(custid %in% clus_7_cust_vector) -> df_tmp ; head(df_tmp)
+nrow(df_tmp)
+df_tmp %>%
+  group_by(custid) %>% 
+  summarise(sum.amt = sum(amt)) -> tmp; head(tmp)
+
+tmp %>% summarise(sum.total.amt = sum(sum.amt)) # 10,526,460,160 원 (105억 3천)
+
+
+# cluster 8번 군집의 패턴을 이해해 보기 위해 10명을 추출해 등급변화를 시각화해보자----
+n_sample = 10
+
+tracing %>%
+  filter(cluster == 8) %>%
+  sample_n(10) -> cluster8.sample10
+
+tracing_sample <- cluster8.sample10; tracing_sample
+sample_custid <- tracing_sample$custid 
+
+tracing_sample_T <- t(tracing_sample[, -1])
+head(tracing_sample_T)
+dim(tracing_sample_T)
+
+as.data.frame(tracing_sample_T)[1:25, 1:n_sample]
+
+tracing_T <- as.data.frame(tracing_sample_T)[1:25, 1:n_sample]
+colnames(tracing_T) <- sample_custid
+tracing_T
+df <- tracing_T
+
+df <- cbind(months = rownames(df), df); head(df)
+rownames(df) <- NULL
+df$months <- as.character(df$months)
+str(df$months)
+dim(df)
+
+dfm = melt(df, id.vars='months')
+
+ggplot(dfm, aes(x=months, y=value, colour=variable)) + 
+  geom_line(aes(color = variable, group = variable, linetype = variable), size=1) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_y_continuous(limits = c(0, 5))
+
+# 소규모 구매, 낮은 등급으로 시작, 이탈 성향
+
+tracing %>%
+  filter(cluster == 8) -> clus_8; head(clus_8); dim(clus_8) # 103,699 명
+
+clus_8_cust_vector <- clus_8$custid; length(clus_8_cust_vector)
+
+# load('cust_prod_total_fin.RData')
+# head(cust_prod_total_fin) %>% as.data.frame()
+# nrow(cust_prod_total_fin) # 5410838
+
+# cust_prod_total_fin %>%
+#   select(custid, date, grade, qty, amt, sex, age, prod_nm, cate, cate_ftn, cate_line, price) -> data
+# 
+# as.data.table(data) -> data
+# head(data)
+
+data %>%
+  filter(custid %in% clus_8_cust_vector) -> df_tmp ; head(df_tmp)
+nrow(df_tmp)
+df_tmp %>%
+  group_by(custid) %>% 
+  summarise(sum.amt = sum(amt)) -> tmp; head(tmp)
+
+tmp %>% summarise(sum.total.amt = sum(sum.amt)) # 2,326,535,287 원 (23억 3천)
+
+# cluster 9번 군집의 패턴을 이해해 보기 위해 10명을 추출해 등급변화를 시각화해보자----
+n_sample = 10
+
+tracing %>%
+  filter(cluster == 9) %>%
+  sample_n(10) -> cluster9.sample10
+
+tracing_sample <- cluster9.sample10; tracing_sample
+sample_custid <- tracing_sample$custid 
+
+tracing_sample_T <- t(tracing_sample[, -1])
+head(tracing_sample_T)
+dim(tracing_sample_T)
+
+as.data.frame(tracing_sample_T)[1:25, 1:n_sample]
+
+tracing_T <- as.data.frame(tracing_sample_T)[1:25, 1:n_sample]
+colnames(tracing_T) <- sample_custid
+tracing_T
+df <- tracing_T
+
+df <- cbind(months = rownames(df), df); head(df)
+rownames(df) <- NULL
+df$months <- as.character(df$months)
+str(df$months)
+dim(df)
+
+dfm = melt(df, id.vars='months')
+
+ggplot(dfm, aes(x=months, y=value, colour=variable)) + 
+  geom_line(aes(color = variable, group = variable, linetype = variable), size=1) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_y_continuous(limits = c(0, 5))
+
+# 높은 등급 유지
+
+tracing %>%
+  filter(cluster == 9) -> clus_9; head(clus_9); dim(clus_9) # 121,952 명
+
+clus_9_cust_vector <- clus_9$custid; length(clus_9_cust_vector)
+
+# load('cust_prod_total_fin.RData')
+# head(cust_prod_total_fin) %>% as.data.frame()
+# nrow(cust_prod_total_fin) # 5410838
+
+# cust_prod_total_fin %>%
+#   select(custid, date, grade, qty, amt, sex, age, prod_nm, cate, cate_ftn, cate_line, price) -> data
+# 
+# as.data.table(data) -> data
+# head(data)
+
+data %>%
+  filter(custid %in% clus_9_cust_vector) -> df_tmp ; head(df_tmp)
+nrow(df_tmp)
+df_tmp %>%
+  group_by(custid) %>% 
+  summarise(sum.amt = sum(amt)) -> tmp; head(tmp)
+
+tmp %>% summarise(sum.total.amt = sum(sum.amt)) # 15,988,235,081 원 (159억 9천)
+
+
+# cluster 10번 군집의 패턴을 이해해 보기 위해 10명을 추출해 등급변화를 시각화해보자----
+n_sample = 10
+
+tracing %>%
+  filter(cluster == 10) %>%
+  sample_n(10) -> cluster10.sample10
+
+tracing_sample <- cluster10.sample10; tracing_sample
+sample_custid <- tracing_sample$custid 
+
+tracing_sample_T <- t(tracing_sample[, -1])
+head(tracing_sample_T)
+dim(tracing_sample_T)
+
+as.data.frame(tracing_sample_T)[1:25, 1:n_sample]
+
+tracing_T <- as.data.frame(tracing_sample_T)[1:25, 1:n_sample]
+colnames(tracing_T) <- sample_custid
+tracing_T
+df <- tracing_T
+
+df <- cbind(months = rownames(df), df); head(df)
+rownames(df) <- NULL
+df$months <- as.character(df$months)
+str(df$months)
+dim(df)
+
+dfm = melt(df, id.vars='months')
+
+ggplot(dfm, aes(x=months, y=value, colour=variable)) + 
+  geom_line(aes(color = variable, group = variable, linetype = variable), size=1) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_y_continuous(limits = c(0, 5))
+
+# 최근 방문, 우수 등급 유지 및 한 등급 하향 상태
+
+tracing %>%
+  filter(cluster == 10) -> clus_10; head(clus_10); dim(clus_10) # 128,360 명
+
+clus_10_cust_vector <- clus_10$custid; length(clus_10_cust_vector)
+
+# load('cust_prod_total_fin.RData')
+# head(cust_prod_total_fin) %>% as.data.frame()
+# nrow(cust_prod_total_fin) # 5410838
+
+# cust_prod_total_fin %>%
+#   select(custid, date, grade, qty, amt, sex, age, prod_nm, cate, cate_ftn, cate_line, price) -> data
+# 
+# as.data.table(data) -> data
+# head(data)
+
+data %>%
+  filter(custid %in% clus_10_cust_vector) -> df_tmp ; head(df_tmp)
+nrow(df_tmp)
+df_tmp %>%
+  group_by(custid) %>% 
+  summarise(sum.amt = sum(amt)) -> tmp; head(tmp)
+
+tmp %>% summarise(sum.total.amt = sum(sum.amt)) # 10,510,396,097 원 (105억 1천)
+
+# 결과 종합해보기----
+# cluster_1 :: # 145,479 명 :: # 3,376,049,032 원 (33억 8천)
+# 고객 등급이 차츰 증가하는 고객집단
+
+# cluster_2 :: # 115,960 명 :: # 13,924,069,474 원 (139억 2천)
+# cluster 2는 16년 말에서 17년 전반기에 와서 상위 등급을 유지하는 고객
+
+# cluster_3 :: # 135,980 명 :: # 33,584,098,859 원 (336억 8천)
+# 예전부터 최근까지 높은 등급을 유지하는 집단
+
+# cluster_4 :: # 135,717 명 :: # 2,710,264,495 원 (27억 1천)
+# cluster 4번은 예전부터 이탈상테를 유지하는 고객들
+
+# cluster_5 :: # 144,838 명 :: # 9,683,550,105 원 (96억 8천)
+# 등급의 변화가 크나 평균이상의 등급은 유지하는 집단
+
+# cluster_6 :: # 128,015 명 :: # 3,522,036,668 원 (35억 2천)
+# 구매금액이 낮고, 등급이 감소경향이 있어 이탈가능성이 있는 집단
+
+# cluster_7 :: # 184,345 명 :: # 10,526,460,160 원 (105억 3천)
+# 예전 고객이었으나, 등급 다소 하향, 그러나 등급 지속 유지, 한 단계 상승 기대
+
+# cluster_8 :: # 103,699 명 :: # 2,326,535,287 원 (23억 3천)
+# 소규모 구매, 낮은 등급으로 시작, 이탈 성향
+
+# cluster_9 :: # 121,952 명 :: # 15,988,235,081 원 (159억 9천)
+# 높은 등급 유지
+
+# cluster_10 :: # 128,360 명 :: # 10,510,396,097 원 (105억 1천)
+# 최근 방문, 우수 등급 유지 및 한 등급 하향 상태
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
